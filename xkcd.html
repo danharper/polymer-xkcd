@@ -1,0 +1,65 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/core-ajax/core-ajax.html">
+
+<polymer-element name="xkcd-comic" attributes="caption comic relevant">
+  <template>
+    <style> figcaption { display: none; } </style>
+
+    <figure>
+      <img src="" id="comic">
+      <figcaption id="caption"></figcaption>
+    </figure>
+
+    <core-ajax id="reqComic" url="proxy-comic.php" handleAs="json"></core-ajax>
+    <core-ajax id="reqRelevant" url="proxy-comic.php" handleAs="json"></core-ajax>
+  </template>
+
+  <script>
+    Polymer('xkcd-comic', {
+
+      comic: '',
+      relevant: '',
+      caption: false,
+
+      ready: function() {
+        if (this.caption) {
+          this.$.caption.style.display = 'block';
+        }
+
+        if (this.relevant) {
+          this.displayRelevant(this.relevant);
+        }
+        else {
+          this.displayComic(this.comic);
+        }
+      },
+
+      displayComic: function(comic) {
+        this.$.reqComic.params = '{"comic":'+comic+'}';
+
+        this.$.reqComic.addEventListener('core-response', function(e) {
+          var response = e.detail.response;
+          this.$.comic.src = response.img;
+          this.$.comic.title = response.alt;
+          this.$.caption.textContent = response.alt;
+        }.bind(this));
+
+        this.$.reqComic.go();
+      },
+
+      displayRelevant: function(text) {
+        this.$.reqRelevant.params = '{"relevant":"'+encodeURI(text)+'"}';
+
+        this.$.reqRelevant.addEventListener('core-response', function(e) {
+          var response = e.detail.response.trim().split(' ');
+          var relevantComic = response[2];
+          if (relevantComic) {
+            this.displayComic(relevantComic.trim());
+          }
+        }.bind(this));
+
+        this.$.reqRelevant.go();
+      }
+    });
+  </script>
+</polymer-element>
